@@ -1,35 +1,127 @@
-# AWS Resources Tracking
+# AWS Resource Tracking
 
-This file tracks all AWS resources used in the Mini-Jira project to avoid cost problems and keep the team organized.
+## Region
 
-## Resource Table
+Current AWS region:
+- Europe (Stockholm) — eu-north-1
 
-| AWS Service | Resource Name | Purpose | Created By | Region | Status | Cost Risk | Notes |
-|---|---|---|---|---|---|---|---|
-| EC2 | Not created yet | Hosts backend server | TBD | Europe Stockholm | Pending | Medium | Stop when not in use |
-| Application Load Balancer | Not created yet | Distributes traffic to EC2 | TBD | Europe Stockholm | Pending | High | Needs approval before creation |
-| DynamoDB | mini-jira-users | Stores users | TBD | Europe Stockholm | Pending | Low | Required |
-| DynamoDB | mini-jira-teams | Stores teams | TBD | Europe Stockholm | Pending | Low | Required |
-| DynamoDB | mini-jira-projects | Stores projects | TBD | Europe Stockholm | Pending | Low | Required |
-| DynamoDB | mini-jira-tasks | Stores tasks | TBD | Europe Stockholm | Pending | Low | Must include teamId and assigneeId indexes |
-| DynamoDB | mini-jira-comments | Stores comments | TBD | Europe Stockholm | Pending | Low | Required |
-| DynamoDB | mini-jira-activity-log | Stores activity log | TBD | Europe Stockholm | Pending | Low | Required |
-| S3 | Not created yet | Stores uploaded task images | TBD | Europe Stockholm | Pending | Low/Medium | Keep storage small |
-| Lambda | Not created yet | Resizes uploaded images | TBD | Europe Stockholm | Pending | Low | Check errors/retries |
-| SNS | Not created yet | Sends notifications | TBD | Europe Stockholm | Pending | Low | Used for task assignment emails |
-| SQS | Not created yet | Queues task assignment events | TBD | Europe Stockholm | Pending | Low | Used by worker Lambda |
-| EventBridge | Not created yet | Runs daily digest Lambda | TBD | Europe Stockholm | Pending | Low | Runs daily at 9:00 AM |
-| CloudWatch | Not created yet | Monitoring, logs, alarms | TBD | Europe Stockholm | Pending | Medium | Watch log storage |
-| NAT Gateway | Not created yet | Internet access for private EC2 | TBD | Europe Stockholm | Not approved | High | Must not create without approval |
-| Elastic IP | Not created yet | Static public IP | TBD | Europe Stockholm | Not approved | Medium/High | Avoid unless needed |
+---
 
-## Daily Check
+# Billing and Cost Monitoring
 
-- Check EC2 running instances.
-- Check Load Balancers.
-- Check NAT Gateways.
-- Check Elastic IPs.
-- Check S3 storage.
-- Check Lambda errors and retries.
-- Check CloudWatch logs.
-- Check Billing Dashboard.
+## Budget Status
+
+Budget name:
+- mini-jira-budget
+
+Budget limit:
+- $1.00
+
+Status:
+- Healthy
+
+Cost anomaly detection:
+- Enabled
+- No anomalies detected
+
+---
+
+# EC2 Resources
+
+## Current Status
+
+No EC2 instances currently running.
+
+Notes:
+- Backend server not deployed yet.
+- No EC2-related compute costs currently active.
+
+---
+
+# S3 Resources
+
+## Current Status
+
+No S3 buckets currently configured for the project.
+
+Notes:
+- Image upload storage not deployed yet.
+- No active storage costs currently detected.
+
+---
+
+# DynamoDB Resources
+
+## Existing Tables
+
+- mini-jira-users
+- mini-jira-teams
+- mini-jira-projects
+- mini-jira-tasks
+- mini-jira-comments
+- mini-jira-activity-log
+
+Status:
+- Active
+
+Indexes:
+- Some tables already contain indexes.
+
+Notes:
+- Backend EC2 IAM role still not available.
+- DynamoDB permissions cannot yet be attached to backend role.
+
+---
+
+# Lambda Resources
+
+## Existing Lambda Roles
+
+- mini-jira-assignment-worker-role
+- mini-jira-assignment-worker-role-kv00gtxo
+
+Purpose:
+- Background assignment processing
+- Activity logging
+- Metrics updates
+
+---
+
+# IAM Monitoring
+
+## Current Findings
+
+- No backend EC2 role found yet.
+- Lambda IAM roles exist.
+- DynamoDB access policy still pending backend role creation.
+
+---
+
+# Cost Safety Notes
+
+Avoid creating without approval:
+- NAT Gateway
+- Extra Load Balancers
+- Extra EC2 instances
+- Elastic IPs
+- Large S3 storage
+
+Always verify:
+- Running instances
+- Storage growth
+- Active services
+- Billing alerts
+
+---
+
+# Infrastructure Status Summary
+
+Currently deployed:
+- DynamoDB tables
+- Lambda roles
+- Budget monitoring
+
+Not yet deployed:
+- Backend EC2 server
+- S3 buckets
+- Backend EC2 IAM role
