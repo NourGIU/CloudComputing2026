@@ -10,6 +10,7 @@ Demonstrate:
 - Notifications
 - Monitoring
 - Image upload workflow
+- Event-driven architecture
 
 ---
 
@@ -124,14 +125,19 @@ Show:
 - Logs
 - Alarm examples
 
+Explain:
+- Monitoring and observability
+- CloudWatch dashboards and alarms
+- Application metrics tracking
+
 ---
 
 # Step 8 — AWS Architecture Explanation
 
 Explain:
 - CloudFront
-- ALB
-- EC2
+- Application Load Balancer
+- EC2 Auto Scaling Group
 - DynamoDB
 - S3
 - Lambda
@@ -140,6 +146,12 @@ Explain:
 - EventBridge
 - Cognito
 - CloudWatch
+
+Explain:
+- High availability across multiple Availability Zones
+- Event-driven architecture
+- Image processing workflow
+- Notification workflow
 
 ---
 
@@ -150,6 +162,26 @@ Explain:
 - Resource tracking
 - Free-tier-safe rules
 - Daily AWS monitoring
+
+Show:
+- Billing dashboard
+- Budget monitoring
+- No unnecessary NAT Gateways
+- No unused Elastic IPs
+
+---
+
+# Step 10 — Daily Digest Workflow
+
+Show:
+- EventBridge scheduled rule
+- Daily Digest Lambda
+- SNS reminder emails
+
+Explain:
+- Every day at 9:00 AM the EventBridge rule triggers the digest Lambda.
+- The Lambda scans tasks due today.
+- Reminder emails are sent to assignees through SNS.
 
 ---
 
@@ -163,3 +195,5 @@ The system demonstrates:
 - AWS monitoring
 - High availability architecture
 - Secure authentication and authorization
+- Notification processing
+- Daily scheduled workflows
