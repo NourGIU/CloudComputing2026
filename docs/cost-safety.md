@@ -4,7 +4,7 @@ This document helps protect the project from unexpected AWS charges and keeps al
 
 ## Important Rules
 
-Member 1 approval is required before creating:
+Team approval is required before creating:
 
 - NAT Gateway
 - Extra EC2 instances
