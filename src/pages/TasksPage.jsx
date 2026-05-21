@@ -3,8 +3,10 @@ import api from "../api.js";
 import CreateTaskForm from "../components/CreateTaskForm.jsx";
 import KanbanBoard from "../components/KanbanBoard.jsx";
 import TaskDetailsModal from "../components/TaskDetailsModal.jsx";
+import { useAuth } from "../auth/AuthContext.jsx";
 
 export default function TasksPage() {
+  const { currentUser } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -42,7 +44,7 @@ export default function TasksPage() {
   return (
     <div>
       <h1>Tasks</h1>
-      <CreateTaskForm onCreated={loadTasks} />
+      {currentUser.role === "Manager" && <CreateTaskForm onCreated={loadTasks} />}
 
       {loading && <p>Loading tasks...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}

@@ -1,17 +1,20 @@
-import { mockAuth } from "./middleware/mockAuth.js";
 import express from "express";
 import cors from "cors";
+
+import { mockAuth } from "./middleware/mockAuth.js";
+import { authenticateCognitoToken } from "./middleware/auth.middleware.js";
 
 import projectsRoutes from "./routes/projects.routes.js";
 import tasksRoutes from "./routes/tasks.routes.js";
 import commentsRoutes from "./routes/comments.routes.js";
 import uploadsRoutes from "./routes/uploads.routes.js";
 
-
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
+// Keep mockAuth for local testing if needed
 app.use(mockAuth);
 
 app.get("/", (req, res) => {
@@ -22,10 +25,11 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/projects", projectsRoutes);
-app.use("/tasks", tasksRoutes);
-app.use("/tasks", commentsRoutes);
-app.use("/uploads", uploadsRoutes);
+// Protected routes
+app.use("/projects", authenticateCognitoToken, projectsRoutes);
+app.use("/tasks", authenticateCognitoToken, tasksRoutes);
+app.use("/tasks", authenticateCognitoToken, commentsRoutes);
+app.use("/uploads", authenticateCognitoToken, uploadsRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
@@ -33,6 +37,7 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3001;
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
