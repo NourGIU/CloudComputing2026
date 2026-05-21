@@ -18,6 +18,10 @@ app.get("/", (req, res) => {
   res.json({ message: "Mini-Jira API is running" });
 });
 
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.use("/projects", projectsRoutes);
 app.use("/tasks", tasksRoutes);
 app.use("/tasks", commentsRoutes);
