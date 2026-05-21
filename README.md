@@ -72,11 +72,17 @@ To Do → In Progress → In Review → Done
 
 # High Availability Architecture
 
-The system is designed using:
-- Multiple Availability Zones
-- Auto Scaling Group
+![Mini Jira AWS Architecture](docs/screenshots/mini-jira-architecture.png)
+
+The system architecture includes:
 - Application Load Balancer
 - CloudFront CDN
+- Lambda serverless processing
+- DynamoDB scalable storage
+- S3 image storage
+- Event-driven processing using SNS, SQS, and EventBridge
+
+The backend infrastructure deployment setup and AWS integration scripts are included as part of the infrastructure implementation.
 
 ---
 
@@ -87,25 +93,46 @@ The system is designed using:
 3. Lambda resizes image
 4. Resized image stored in another S3 bucket
 
+Current deployed S3 buckets:
+- mini-jira-original-images1
+- mini-jira-resized-images1
+
 ---
 
 # Event-Driven Workflow
 
 1. Manager assigns task
 2. SNS publishes notification
-3. SQS receives event
-4. Worker Lambda processes event
-5. CloudWatch metrics updated
+3. SQS receives assignment event
+4. Assignment Worker Lambda processes the event
+5. Activity logs are written
+6. CloudWatch custom metrics are updated
+7. Daily digest reminders are triggered using EventBridge and Lambda
 
 ---
 
 # Monitoring
 
-CloudWatch dashboard monitors:
-- Tasks created
-- Tasks closed
-- EC2 CPU utilization
-- Average task completion time
+CloudWatch monitoring setup includes:
+- Dashboard widgets
+- CloudWatch alarms
+- Custom task activity metrics
+- Assignment worker monitoring
+- Task activity tracking
+
+Monitoring screenshots are available in the repository screenshots folder.
+
+---
+
+# Authentication
+
+Amazon Cognito is used for:
+- User authentication
+- Login and signup management
+- Secure access control
+
+Configured Cognito resource:
+- mini-jira-app-client
 
 ---
 
@@ -134,25 +161,35 @@ Additional documentation is available in the `docs/` folder:
 - architecture.md
 - cost-safety.md
 - demo-script.md
+- submission-checklist.md
 
 ---
 
 # AWS Region
 
 Current project region:
-- Europe (Stockholm)
+- Europe (Stockholm) — eu-north-1
 
 ---
 
-# Team Responsibilities
+# Current Project Progress
 
-## Member 1
-- Documentation
-- Cost monitoring
-- IAM coordination
-- Resource tracking
-- Architecture coordination
-- Final submission preparation
+Completed components currently include:
+- DynamoDB tables
+- Core APIs
+- Frontend integration
+- S3 image upload buckets
+- Lambda image resize workflow
+- Assignment worker Lambda
+- Daily digest Lambda
+- SNS notification setup
+- SQS queue integration
+- EventBridge scheduled rule
+- CloudWatch dashboard and alarms
+- Cognito authentication setup
+- Application Load Balancer
+- Infrastructure deployment setup
+- Project documentation and cost monitoring
 
 ---
 
