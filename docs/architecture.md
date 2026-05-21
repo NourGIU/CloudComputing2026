@@ -15,7 +15,13 @@ The system supports:
 - Notifications
 - Monitoring
 
-The architecture is designed for high availability and scalability across multiple AWS services.
+The architecture is designed using scalable AWS cloud services and event-driven processing.
+
+---
+
+## Architecture Diagram
+
+![Mini Jira AWS Architecture](screenshots/mini-jira-architecture.png)
 
 ---
 
@@ -48,20 +54,24 @@ Purpose:
 ## Application Load Balancer (ALB)
 
 Purpose:
-- Distributes traffic across EC2 instances
+- Distributes traffic
 - Performs health checks
-- Improves high availability
+- Routes incoming requests to backend services
+
+Current status:
+- Active
 
 ---
 
-## EC2 (Auto Scaling Group)
+## EC2
 
 Purpose:
 - Hosts backend Node.js application
 - Runs API routes and business logic
 
-High Availability:
-- Multiple EC2 instances across different Availability Zones
+Current status:
+- Backend deployment setup prepared
+- No EC2 instances currently running
 
 ---
 
@@ -91,8 +101,8 @@ Purpose:
 - Keeps image versions
 
 Buckets:
-- Originals bucket
-- Resized images bucket
+- mini-jira-original-images1
+- mini-jira-resized-images1
 
 ---
 
@@ -106,6 +116,9 @@ Triggered when:
 Purpose:
 - Creates resized thumbnails
 
+Function:
+- MiniJiraImageResizer
+
 ---
 
 ### Assignment Worker Lambda
@@ -117,6 +130,19 @@ Purpose:
 - Writes activity logs
 - Publishes CloudWatch metrics
 
+Function:
+- mini-jira-assignment-worker
+
+---
+
+### Daily Worker Lambda
+
+Purpose:
+- Handles scheduled background processing
+
+Function:
+- mini-jira-daily-worker
+
 ---
 
 ### Daily Digest Lambda
@@ -126,6 +152,9 @@ Triggered by:
 
 Purpose:
 - Sends daily task reminder emails
+
+Function:
+- mini-jira-daily-digest
 
 ---
 
@@ -148,7 +177,7 @@ Purpose:
 ## EventBridge
 
 Purpose:
-- Runs scheduled daily digest Lambda every morning
+- Runs scheduled daily digest Lambda every day
 
 ---
 
@@ -158,9 +187,8 @@ Purpose:
 - Handles authentication
 - Manages users and roles
 
-Stores:
-- Role
-- teamId
+Configured resource:
+- mini-jira-app-client
 
 ---
 
@@ -172,11 +200,11 @@ Purpose:
 - Metrics
 - Alarms
 
-Dashboard widgets:
-- Tasks created per day
-- Tasks closed per team
-- Average task completion time
-- EC2 CPU utilization
+Monitoring includes:
+- Dashboard widgets
+- Task activity metrics
+- Assignment worker monitoring
+- SQS alarm monitoring
 
 ---
 
@@ -184,13 +212,12 @@ Dashboard widgets:
 
 IAM roles and policies are used with least-privilege access.
 
-The backend EC2 role includes DynamoDB permissions:
-- PutItem
-- GetItem
-- UpdateItem
-- DeleteItem
-- Scan
-- Query
+Lambda IAM roles are configured for:
+- S3 access
+- CloudWatch metrics
+- SQS processing
+
+Backend EC2 IAM role deployment is still pending.
 
 ---
 
@@ -206,12 +233,12 @@ Managers can access all teams and tasks.
 
 ---
 
-# High Availability
+# Scalability and Reliability
 
 The architecture uses:
-- Multiple Availability Zones
-- Load Balancer
-- Auto Scaling
+- Application Load Balancer
 - CloudFront CDN
+- Serverless Lambda processing
+- Event-driven architecture using SNS and SQS
 
-to improve reliability and uptime.
+to improve scalability and reliability.
