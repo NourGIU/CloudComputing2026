@@ -72,7 +72,7 @@ To Do → In Progress → In Review → Done
 
 # High Availability Architecture
 
-![Mini Jira AWS Architecture](docs/screenshots/mini-jira-architecture.png)
+![Mini Jira AWS Architecture](docs/screenshots/architecture/mini-jira-architecture.png)
 
 The system architecture includes:
 - Application Load Balancer
