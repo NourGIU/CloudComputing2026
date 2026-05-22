@@ -13,7 +13,11 @@ import { ddb, tables } from "../config/dynamo.js";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { CloudWatchClient, PutMetricDataCommand } from "@aws-sdk/client-cloudwatch";
 
-const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION || "eu-north-1" });
+const awsRegion = process.env.AWS_REGION || "eu-north-1";
+const sns = new SNSClient({ region: awsRegion });
+const cloudwatch = new CloudWatchClient({ region: awsRegion });
+const assignmentTopicArn =
+  process.env.SNS_TASK_ASSIGN_TOPIC_ARN || process.env.SNS_TOPIC_ARN;
 
 const VALID_STATUSES = [
   "To Do",
@@ -30,6 +34,34 @@ const fakeUser = {
 
 const isManager = (user) =>
   user?.role === "Manager";
+
+const publishAssignmentEvent = async (task, assignedBy, reason = "created") => {
+  if (!assignmentTopicArn) {
+    console.warn("SNS task assignment topic ARN not configured; skipping publish");
+    return;
+  }
+
+  await sns.send(
+    new PublishCommand({
+      TopicArn: assignmentTopicArn,
+      Subject: `Task Assigned: ${task.title}`,
+      Message: JSON.stringify({
+        eventType: "TASK_ASSIGNED",
+        reason,
+        taskId: task.taskId,
+        title: task.title,
+        projectId: task.projectId,
+        teamId: task.teamId,
+        assigneeId: task.assigneeId,
+        assigneeName: task.assigneeName,
+        deadline: task.deadline,
+        assignedBy,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+      }),
+    })
+  );
+};
 
 export const createTask = async (
   req,
@@ -99,33 +131,11 @@ export const createTask = async (
       })
     );
 
-    // Publish assignment event to SNS for email + SQS processing
-    (async () => {
-      try {
-        const topicArn = process.env.SNS_TASK_ASSIGN_TOPIC_ARN || process.env.SNS_TOPIC_ARN;
-        if (topicArn) {
-          const sns = new SNSClient({ region: process.env.AWS_REGION || "eu-north-1" });
-          await sns.send(
-            new PublishCommand({
-              TopicArn: topicArn,
-              Subject: "Task Assigned",
-              Message: JSON.stringify({
-                eventType: "TASK_ASSIGNED",
-                taskId: task.taskId,
-                teamId: task.teamId,
-                assigneeId: task.assigneeId,
-                assigneeName: task.assigneeName,
-                deadline: task.deadline,
-              }),
-            })
-          );
-        } else {
-          console.warn("SNS topic ARN not configured; skipping publish");
-        }
-      } catch (err) {
-        console.error("Failed to publish SNS assignment event", err);
-      }
-    })();
+    try {
+      await publishAssignmentEvent(task, user.name, "created");
+    } catch (err) {
+      console.error("Failed to publish SNS assignment event", err);
+    }
 
     // Publish task creation metric for dashboard monitoring
     (async () => {
@@ -365,11 +375,28 @@ export const updateTask =
           })
         );
 
+      const updatedTask = result.Attributes;
+      const assignmentChanged =
+        fields.some((field) =>
+          ["assigneeId", "assigneeName", "teamId"].includes(field)
+        ) &&
+        (
+          updatedTask.assigneeId !== task.assigneeId ||
+          updatedTask.assigneeName !== task.assigneeName ||
+          updatedTask.teamId !== task.teamId
+        );
+
+      if (assignmentChanged) {
+        try {
+          await publishAssignmentEvent(updatedTask, req.user?.name || fakeUser.name, "reassigned");
+        } catch (err) {
+          console.error("Failed to publish SNS reassignment event", err);
+        }
+      }
+
       return res
         .status(200)
-        .json(
-          result.Attributes
-        );
+        .json(updatedTask);
 
     } catch (error) {
 

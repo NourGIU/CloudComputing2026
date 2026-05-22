@@ -1,35 +1,127 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Member6 resources: SNS topic, SQS queue, subscriptions, EventBridge rule, CloudWatch dashboard and alarm
+Description: Member 6 SNS, SQS, EventBridge, Lambda wiring, CloudWatch dashboard, and alarm resources
 
 Parameters:
   NotificationEmail:
     Type: String
-    Description: Email address to subscribe to assignment notifications
+    Description: Primary email address to subscribe to assignment, digest, and alarm notifications
+  NotificationEmail2:
+    Type: String
+    Default: ''
+    Description: Optional second frontend member email subscription
+  NotificationEmail3:
+    Type: String
+    Default: ''
+    Description: Optional third frontend member email subscription
+  NotificationEmail4:
+    Type: String
+    Default: ''
+    Description: Optional fourth frontend member email subscription
+  NotificationEmail5:
+    Type: String
+    Default: ''
+    Description: Optional fifth frontend member email subscription
+  NotificationEmail6:
+    Type: String
+    Default: ''
+    Description: Optional sixth frontend member email subscription
   DailyDigestLambdaArn:
     Type: String
-    Description: ARN of the Daily Digest Lambda to target from EventBridge
+    Description: ARN of the Daily Digest Lambda targeted by EventBridge
   WorkerLambdaArn:
     Type: String
-    Description: ARN of the Worker Lambda (optional)
+    Description: ARN of the SQS assignment worker Lambda
   EC2InstanceId:
     Type: String
-    Description: EC2 InstanceId to monitor for CPU alarm
+    Description: EC2 InstanceId to monitor for CPU alarm and dashboard widget
+
+Conditions:
+  HasNotificationEmail2: !Not [!Equals [!Ref NotificationEmail2, '']]
+  HasNotificationEmail3: !Not [!Equals [!Ref NotificationEmail3, '']]
+  HasNotificationEmail4: !Not [!Equals [!Ref NotificationEmail4, '']]
+  HasNotificationEmail5: !Not [!Equals [!Ref NotificationEmail5, '']]
+  HasNotificationEmail6: !Not [!Equals [!Ref NotificationEmail6, '']]
 
 Resources:
   AssignmentTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: mini-jira-assignment-topic
+      TopicName: mini-jira-task-assignment-topic
+
+  DailyDigestTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: mini-jira-daily-digest-topic
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: mini-jira-alarm-topic
 
   AssignmentQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: mini-jira-assignment-queue
+      VisibilityTimeout: 60
 
-  AssignmentTopicEmailSubscription:
+  AssignmentTopicEmailSubscription1:
     Type: AWS::SNS::Subscription
     Properties:
       TopicArn: !Ref AssignmentTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  AssignmentTopicEmailSubscription2:
+    Type: AWS::SNS::Subscription
+    Condition: HasNotificationEmail2
+    Properties:
+      TopicArn: !Ref AssignmentTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail2
+
+  AssignmentTopicEmailSubscription3:
+    Type: AWS::SNS::Subscription
+    Condition: HasNotificationEmail3
+    Properties:
+      TopicArn: !Ref AssignmentTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail3
+
+  AssignmentTopicEmailSubscription4:
+    Type: AWS::SNS::Subscription
+    Condition: HasNotificationEmail4
+    Properties:
+      TopicArn: !Ref AssignmentTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail4
+
+  AssignmentTopicEmailSubscription5:
+    Type: AWS::SNS::Subscription
+    Condition: HasNotificationEmail5
+    Properties:
+      TopicArn: !Ref AssignmentTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail5
+
+  AssignmentTopicEmailSubscription6:
+    Type: AWS::SNS::Subscription
+    Condition: HasNotificationEmail6
+    Properties:
+      TopicArn: !Ref AssignmentTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail6
+
+  DailyDigestEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref DailyDigestTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  AlarmEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlarmTopic
       Protocol: email
       Endpoint: !Ref NotificationEmail
 
@@ -50,22 +142,39 @@ Resources:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
-            Principal: '*'
-            Action: 'SQS:SendMessage'
+            Principal:
+              Service: sns.amazonaws.com
+            Action: sqs:SendMessage
             Resource: !GetAtt AssignmentQueue.Arn
             Condition:
               ArnEquals:
                 aws:SourceArn: !Ref AssignmentTopic
 
+  AssignmentWorkerEventSource:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: !GetAtt AssignmentQueue.Arn
+      FunctionName: !Ref WorkerLambdaArn
+
   EventRuleDailyDigest:
     Type: AWS::Events::Rule
     Properties:
       Name: mini-jira-daily-digest-rule
-      ScheduleExpression: 'cron(0 9 * * ? *)'
+      ScheduleExpression: cron(0 9 * * ? *)
       State: ENABLED
       Targets:
         - Arn: !Ref DailyDigestLambdaArn
           Id: DailyDigestTarget
+
+  AllowEventBridgeInvokeDailyDigest:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DailyDigestLambdaArn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventRuleDailyDigest.Arn
 
   Dashboard:
     Type: AWS::CloudWatch::Dashboard
@@ -76,8 +185,9 @@ Resources:
           "widgets": [
             {"type":"metric","x":0,"y":0,"width":12,"height":6,"properties":{"metrics":[["MiniJira","TasksCreatedPerDay","TeamId","team1"],["MiniJira","TasksCreatedPerDay","TeamId","team2"]],"period":86400,"stat":"Sum","region":"${AWS::Region}","title":"Tasks Created Per Day"}},
             {"type":"metric","x":12,"y":0,"width":12,"height":6,"properties":{"metrics":[["MiniJira","TasksClosedPerTeam","TeamId","team1"],["MiniJira","TasksClosedPerTeam","TeamId","team2"]],"period":86400,"stat":"Sum","region":"${AWS::Region}","title":"Tasks Closed Per Day Per Team"}},
-            {"type":"metric","x":0,"y":6,"width":12,"height":6,"properties":{"metrics":[["MiniJira","TimeToCloseSeconds","TeamId","team1"]],"period":300,"stat":"Average","region":"${AWS::Region}","title":"Average Time To Close (Team 1, seconds)"}},
-            {"type":"metric","x":12,"y":6,"width":12,"height":6,"properties":{"metrics":[["AWS/EC2","CPUUtilization","InstanceId","${EC2InstanceId}"]],"period":300,"stat":"Average","region":"${AWS::Region}","title":"EC2 CPU Utilization"}}
+            {"type":"metric","x":0,"y":6,"width":12,"height":6,"properties":{"metrics":[["MiniJira","TimeToCloseSeconds","TeamId","team1"],["MiniJira","TimeToCloseSeconds","TeamId","team2"]],"period":86400,"stat":"Average","region":"${AWS::Region}","title":"Average Time To Close"}},
+            {"type":"metric","x":12,"y":6,"width":12,"height":6,"properties":{"metrics":[["AWS/EC2","CPUUtilization","InstanceId","${EC2InstanceId}"]],"period":300,"stat":"Average","region":"${AWS::Region}","title":"EC2 CPU Utilization"}},
+            {"type":"metric","x":0,"y":12,"width":12,"height":6,"properties":{"metrics":[["MiniJira","TasksAssignedPerTeam","TeamId","team1"],["MiniJira","TasksAssignedPerTeam","TeamId","team2"]],"period":86400,"stat":"Sum","region":"${AWS::Region}","title":"Tasks Assigned Per Team"}}
           ]
         }
 
@@ -85,7 +195,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: mini-jira-ec2-high-cpu
-      AlarmDescription: Alarm when EC2 average CPU > 80% for 5 minutes
+      AlarmDescription: Alarm when EC2 average CPU is greater than 80 percent for 5 minutes
       Namespace: AWS/EC2
       MetricName: CPUUtilization
       Dimensions:
@@ -96,14 +206,25 @@ Resources:
       EvaluationPeriods: 1
       Threshold: 80
       ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
 
 Outputs:
   AssignmentTopicArn:
-    Description: SNS Topic ARN for task assignments
+    Description: SNS topic ARN for task assignments
     Value: !Ref AssignmentTopic
   AssignmentQueueUrl:
-    Description: SQS Queue URL
+    Description: SQS assignment queue URL
     Value: !Ref AssignmentQueue
+  AssignmentQueueArn:
+    Description: SQS assignment queue ARN
+    Value: !GetAtt AssignmentQueue.Arn
+  DailyDigestTopicArn:
+    Description: SNS topic ARN for daily digest emails
+    Value: !Ref DailyDigestTopic
+  AlarmTopicArn:
+    Description: SNS topic ARN for CloudWatch alarm emails
+    Value: !Ref AlarmTopic
   DashboardName:
     Description: CloudWatch Dashboard name
     Value: mini-jira-dashboard

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
@@ -9,6 +10,7 @@ import commentsRoutes from "./routes/comments.routes.js";
 import uploadsRoutes from "./routes/uploads.routes.js";
 import activityRoutes from "./routes/activity.routes.js";
 import metricsRoutes from "./routes/metrics.routes.js";
+import notificationsRoutes from "./routes/notifications.routes.js";
 
 const app = express();
 
@@ -31,6 +33,7 @@ app.use("/tasks", commentsRoutes);
 app.use("/uploads", uploadsRoutes);
 app.use("/activity", activityRoutes);
 app.use("/metrics", metricsRoutes);
+app.use("/notifications", notificationsRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

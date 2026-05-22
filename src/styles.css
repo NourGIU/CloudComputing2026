@@ -136,6 +136,86 @@ textarea {
   padding: 28px;
 }
 
+.page-stack {
+  display: grid;
+  gap: 20px;
+}
+
+.muted-text {
+  color: #64748b;
+  margin: 6px 0 0;
+}
+
+.metric-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.metric-card,
+.table-panel {
+  background: #fff;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.metric-card {
+  display: grid;
+  gap: 8px;
+  min-height: 124px;
+}
+
+.metric-card span,
+.metric-card small,
+.activity-row small {
+  color: #64748b;
+}
+
+.metric-card strong {
+  font-size: 24px;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.table-panel {
+  overflow-x: auto;
+}
+
+.table-panel table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table-panel th,
+.table-panel td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table-panel th {
+  color: #475569;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.activity-row {
+  border-bottom: 1px solid #e5e7eb;
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+}
+
+.activity-row:last-child {
+  border-bottom: 0;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -143,5 +223,10 @@ textarea {
 
   .sidebar {
     min-height: auto;
+  }
+
+  .metric-grid,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
   }
 }
