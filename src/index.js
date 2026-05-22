@@ -7,6 +7,9 @@ import projectsRoutes from "./routes/projects.routes.js";
 import tasksRoutes from "./routes/tasks.routes.js";
 import commentsRoutes from "./routes/comments.routes.js";
 import uploadsRoutes from "./routes/uploads.routes.js";
+import activityRoutes from "./routes/activity.routes.js";
+import metricsRoutes from "./routes/metrics.routes.js";
+import activityLogsRoutes from "./routes/activityLogs.routes.js";
 
 const app = express();
 
@@ -32,6 +35,24 @@ app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
 });
+
+app.use(
+  "/activity-logs",
+  authenticateCognitoToken,
+  activityRoutes
+);
+
+app.use(
+  "/metrics",
+  authenticateCognitoToken,
+  metricsRoutes
+);
+
+app.use(
+  "/activity-logs",
+  authenticateCognitoToken,
+  activityLogsRoutes
+);
 
 const PORT = process.env.PORT || 3001;
 
