@@ -25,6 +25,9 @@ export default function AppLayout() {
 
         <nav>
           <NavLink to="/tasks">Tasks</NavLink>
+          <NavLink to="/activity">Activity</NavLink>
+          <NavLink to="/notifications">Notifications</NavLink>
+          <NavLink to="/dashboard">Dashboard</NavLink>
           {currentUser.role === "Manager" && <NavLink to="/projects">Projects</NavLink>}
         </nav>
 

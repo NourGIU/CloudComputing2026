@@ -7,6 +7,8 @@ import projectsRoutes from "./routes/projects.routes.js";
 import tasksRoutes from "./routes/tasks.routes.js";
 import commentsRoutes from "./routes/comments.routes.js";
 import uploadsRoutes from "./routes/uploads.routes.js";
+import activityRoutes from "./routes/activity.routes.js";
+import metricsRoutes from "./routes/metrics.routes.js";
 
 const app = express();
 
@@ -27,6 +29,8 @@ app.use("/projects", projectsRoutes);
 app.use("/tasks", tasksRoutes);
 app.use("/tasks", commentsRoutes);
 app.use("/uploads", uploadsRoutes);
+app.use("/activity", activityRoutes);
+app.use("/metrics", metricsRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

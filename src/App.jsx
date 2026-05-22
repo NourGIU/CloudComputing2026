@@ -6,6 +6,9 @@ import LoginPage from "./pages/LoginPage.jsx";
 import ProjectsPage from "./pages/ProjectsPage.jsx";
 import TasksPage from "./pages/TasksPage.jsx";
 import UnauthorizedPage from "./pages/UnauthorizedPage.jsx";
+import ActivityLogPage from "./pages/ActivityLogPage.jsx";
+import NotificationsPage from "./pages/NotificationsPage.jsx";
+import DashboardPage from "./pages/DashboardPage.jsx";
 
 export default function App() {
   return (
@@ -22,6 +25,9 @@ export default function App() {
       >
         <Route index element={<Navigate to="/tasks" replace />} />
         <Route path="tasks" element={<TasksPage />} />
+        <Route path="activity" element={<ActivityLogPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route
           path="projects"
           element={

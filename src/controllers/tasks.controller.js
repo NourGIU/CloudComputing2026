@@ -10,6 +10,10 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 
 import { ddb, tables } from "../config/dynamo.js";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
+import { CloudWatchClient, PutMetricDataCommand } from "@aws-sdk/client-cloudwatch";
+
+const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION || "eu-north-1" });
 
 const VALID_STATUSES = [
   "To Do",
@@ -95,9 +99,58 @@ export const createTask = async (
       })
     );
 
-    return res
-      .status(201)
-      .json(task);
+    // Publish assignment event to SNS for email + SQS processing
+    (async () => {
+      try {
+        const topicArn = process.env.SNS_TASK_ASSIGN_TOPIC_ARN || process.env.SNS_TOPIC_ARN;
+        if (topicArn) {
+          const sns = new SNSClient({ region: process.env.AWS_REGION || "eu-north-1" });
+          await sns.send(
+            new PublishCommand({
+              TopicArn: topicArn,
+              Subject: "Task Assigned",
+              Message: JSON.stringify({
+                eventType: "TASK_ASSIGNED",
+                taskId: task.taskId,
+                teamId: task.teamId,
+                assigneeId: task.assigneeId,
+                assigneeName: task.assigneeName,
+                deadline: task.deadline,
+              }),
+            })
+          );
+        } else {
+          console.warn("SNS topic ARN not configured; skipping publish");
+        }
+      } catch (err) {
+        console.error("Failed to publish SNS assignment event", err);
+      }
+    })();
+
+    // Publish task creation metric for dashboard monitoring
+    (async () => {
+      try {
+        await cloudwatch.send(
+          new PutMetricDataCommand({
+            Namespace: "MiniJira",
+            MetricData: [
+              {
+                MetricName: "TasksCreatedPerDay",
+                Dimensions: [
+                  { Name: "TeamId", Value: task.teamId },
+                ],
+                Unit: "Count",
+                Value: 1,
+              },
+            ],
+          })
+        );
+      } catch (metricErr) {
+        console.error("Failed to publish task created metric", metricErr);
+      }
+    })();
+
+    return res.status(201).json(task);
 
   } catch (error) {
 
@@ -460,6 +513,42 @@ export const updateTaskStatus =
           Item: auditLog,
         })
       );
+
+      if (status === "Done" && oldStatus !== "Done") {
+        const createdAt = new Date(task.createdAt);
+        const closedAt = new Date(updatedAt);
+        const closeSeconds = (closedAt - createdAt) / 1000;
+
+        (async () => {
+          try {
+            await cloudwatch.send(
+              new PutMetricDataCommand({
+                Namespace: "MiniJira",
+                MetricData: [
+                  {
+                    MetricName: "TasksClosedPerTeam",
+                    Dimensions: [
+                      { Name: "TeamId", Value: task.teamId },
+                    ],
+                    Unit: "Count",
+                    Value: 1,
+                  },
+                  {
+                    MetricName: "TimeToCloseSeconds",
+                    Dimensions: [
+                      { Name: "TeamId", Value: task.teamId },
+                    ],
+                    Unit: "Seconds",
+                    Value: closeSeconds,
+                  },
+                ],
+              })
+            );
+          } catch (metricErr) {
+            console.error("Failed to publish task closed metrics", metricErr);
+          }
+        })();
+      }
 
       return res.status(200).json({
         taskId: id,

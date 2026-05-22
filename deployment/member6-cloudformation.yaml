@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Member6 resources: SNS topic, SQS queue, subscriptions, EventBridge rule, CloudWatch dashboard and alarm
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Description: Email address to subscribe to assignment notifications
+  DailyDigestLambdaArn:
+    Type: String
+    Description: ARN of the Daily Digest Lambda to target from EventBridge
+  WorkerLambdaArn:
+    Type: String
+    Description: ARN of the Worker Lambda (optional)
+  EC2InstanceId:
+    Type: String
+    Description: EC2 InstanceId to monitor for CPU alarm
+
+Resources:
+  AssignmentTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: mini-jira-assignment-topic
+
+  AssignmentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: mini-jira-assignment-queue
+
+  AssignmentTopicEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AssignmentTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  AssignmentTopicSqsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AssignmentTopic
+      Protocol: sqs
+      Endpoint: !GetAtt AssignmentQueue.Arn
+      RawMessageDelivery: true
+
+  SqsPolicyAllowSns:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref AssignmentQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: 'SQS:SendMessage'
+            Resource: !GetAtt AssignmentQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref AssignmentTopic
+
+  EventRuleDailyDigest:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: mini-jira-daily-digest-rule
+      ScheduleExpression: 'cron(0 9 * * ? *)'
+      State: ENABLED
+      Targets:
+        - Arn: !Ref DailyDigestLambdaArn
+          Id: DailyDigestTarget
+
+  Dashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: mini-jira-dashboard
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {"type":"metric","x":0,"y":0,"width":12,"height":6,"properties":{"metrics":[["MiniJira","TasksCreatedPerDay","TeamId","team1"],["MiniJira","TasksCreatedPerDay","TeamId","team2"]],"period":86400,"stat":"Sum","region":"${AWS::Region}","title":"Tasks Created Per Day"}},
+            {"type":"metric","x":12,"y":0,"width":12,"height":6,"properties":{"metrics":[["MiniJira","TasksClosedPerTeam","TeamId","team1"],["MiniJira","TasksClosedPerTeam","TeamId","team2"]],"period":86400,"stat":"Sum","region":"${AWS::Region}","title":"Tasks Closed Per Day Per Team"}},
+            {"type":"metric","x":0,"y":6,"width":12,"height":6,"properties":{"metrics":[["MiniJira","TimeToCloseSeconds","TeamId","team1"]],"period":300,"stat":"Average","region":"${AWS::Region}","title":"Average Time To Close (Team 1, seconds)"}},
+            {"type":"metric","x":12,"y":6,"width":12,"height":6,"properties":{"metrics":[["AWS/EC2","CPUUtilization","InstanceId","${EC2InstanceId}"]],"period":300,"stat":"Average","region":"${AWS::Region}","title":"EC2 CPU Utilization"}}
+          ]
+        }
+
+  HighCpuAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: mini-jira-ec2-high-cpu
+      AlarmDescription: Alarm when EC2 average CPU > 80% for 5 minutes
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2InstanceId
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+
+Outputs:
+  AssignmentTopicArn:
+    Description: SNS Topic ARN for task assignments
+    Value: !Ref AssignmentTopic
+  AssignmentQueueUrl:
+    Description: SQS Queue URL
+    Value: !Ref AssignmentQueue
+  DashboardName:
+    Description: CloudWatch Dashboard name
+    Value: mini-jira-dashboard

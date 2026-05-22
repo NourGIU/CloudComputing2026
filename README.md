@@ -134,6 +134,7 @@ Additional documentation is available in the `docs/` folder:
 - architecture.md
 - cost-safety.md
 - demo-script.md
+- member6-instructions.md
 
 ---
 
