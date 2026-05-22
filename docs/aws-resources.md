@@ -151,6 +151,7 @@ Observed behavior:
 
 ## Existing Buckets
 
+- mini-jira-frontend1
 - mini-jira-original-images1
 - mini-jira-resized-images1
 
@@ -345,8 +346,9 @@ Distribution status:
 Type:
 - Standard
 
-Origin:
-- mini-jira-alb
+Origins observed:
+- mini-jira-frontend bucket origin
+- mini-jira-alb backend origin
 
 Purpose:
 - Global content delivery and frontend acceleration.

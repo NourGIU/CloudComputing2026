@@ -159,11 +159,15 @@ Important:
 # CloudFront Safety
 
 Current observed infrastructure:
-- 1 active CloudFront distribution
+- Active CloudFront distributions detected
+
+Observed origins:
+- mini-jira-frontend bucket origin
+- mini-jira-alb backend origin
 
 Rules:
 - Avoid creating duplicate distributions.
-- Reuse the existing distribution whenever possible.
+- Reuse existing distributions whenever possible.
 - Monitor data transfer usage.
 
 Important:
@@ -174,6 +178,7 @@ Important:
 # S3 Storage Safety
 
 Current buckets:
+- mini-jira-frontend1
 - mini-jira-original-images1
 - mini-jira-resized-images1
 
