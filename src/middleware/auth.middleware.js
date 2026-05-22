@@ -24,9 +24,6 @@ const getVerifier = () => {
   return verifier;
 };
 
-const readClaim = (payload, claimName) =>
-  payload[claimName] || payload[`custom:${claimName}`] || null;
-
 // Validates the Authorization Bearer token and exposes a normalized user object
 // for controllers and authorization middleware.
 export const authenticateCognitoToken = async (req, res, next) => {
@@ -46,9 +43,9 @@ export const authenticateCognitoToken = async (req, res, next) => {
   }
 
   try {
-    const payload = await cognitoVerifier.verify(token);
-    const role = readClaim(payload, "role");
-    const teamId = readClaim(payload, "teamId");
+    const decoded = await cognitoVerifier.verify(token);
+    const role = decoded["custom:role"] || null;
+    const teamId = decoded["custom:teamId"] || null;
 
     if (!role || !teamId) {
       return res.status(403).json({
@@ -57,12 +54,13 @@ export const authenticateCognitoToken = async (req, res, next) => {
     }
 
     req.user = {
-      userId: payload.sub,
-      email: payload.email || null,
-      name: payload.name || payload["cognito:username"] || payload.email || payload.sub,
+      userId: decoded.sub,
+      email: decoded.email || null,
       role,
       teamId,
     };
+
+    console.log("Authenticated user:", req.user);
 
     return next();
   } catch (error) {

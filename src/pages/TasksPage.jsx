@@ -7,6 +7,7 @@ import { useAuth } from "../auth/AuthContext.jsx";
 
 export default function TasksPage() {
   const { currentUser } = useAuth();
+
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -41,18 +42,30 @@ export default function TasksPage() {
     }
   };
 
+  const isManager =
+    currentUser?.role === "Manager" ||
+    currentUser?.role === "manager";
+
   return (
     <div>
       <h1>Tasks</h1>
-      {currentUser.role === "Manager" && <CreateTaskForm onCreated={loadTasks} />}
+
+      {isManager && <CreateTaskForm onCreated={loadTasks} />}
 
       {loading && <p>Loading tasks...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
       {!loading && !error && tasks.length === 0 && <p>No tasks found.</p>}
 
-      <KanbanBoard tasks={tasks} onStatusChange={handleStatusUpdate} onSelectTask={setSelectedTask} />
+      <KanbanBoard
+        tasks={tasks}
+        onStatusChange={handleStatusUpdate}
+        onSelectTask={setSelectedTask}
+      />
 
-      <TaskDetailsModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+      <TaskDetailsModal
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+      />
     </div>
   );
 }
