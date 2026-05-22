@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 
-import { mockAuth } from "./middleware/mockAuth.js";
+import { authenticateCognitoToken } from "./middleware/auth.middleware.js";
 
 import projectsRoutes from "./routes/projects.routes.js";
 import tasksRoutes from "./routes/tasks.routes.js";
@@ -23,10 +23,10 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/projects", projectsRoutes);
-app.use("/tasks", tasksRoutes);
-app.use("/tasks", commentsRoutes);
-app.use("/uploads", uploadsRoutes);
+app.use("/projects", authenticateCognitoToken, projectsRoutes);
+app.use("/tasks", authenticateCognitoToken, tasksRoutes);
+app.use("/tasks", authenticateCognitoToken, commentsRoutes);
+app.use("/uploads", authenticateCognitoToken, uploadsRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

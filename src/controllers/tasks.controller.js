@@ -18,22 +18,49 @@ const VALID_STATUSES = [
   "Done",
 ];
 
-const fakeUser = {
-  role: "Manager",
-  name: "Nour",
-  teamId: "team1",
-};
+const FORBIDDEN_TEAM_MESSAGE =
+  "Forbidden: You cannot access tasks from another team";
 
 const isManager = (user) =>
   user?.role === "Manager";
+
+const isEmployee = (user) =>
+  user?.role === "Employee";
+
+const getUserDisplayName = (user) =>
+  user?.email || user?.userId || "unknown";
+
+const isAssignedToUser = (user, task) =>
+  task?.assigneeId === user?.userId || task?.assigneeId === user?.email;
+
+const canAccessTask = (user, task) =>
+  isManager(user) ||
+  (isEmployee(user) &&
+    task?.teamId === user?.teamId &&
+    isAssignedToUser(user, task));
+
+const logTaskTeamCheck = (req, task) => {
+  console.log("Authenticated user:", req.user);
+  console.log("Task team:", task.teamId, "User team:", req.user?.teamId);
+};
+
+const forbidOtherTeamTask = (res) =>
+  res.status(403).json({
+    error: FORBIDDEN_TEAM_MESSAGE,
+  });
 
 export const createTask = async (
   req,
   res
 ) => {
 
-  const user =
-    req.user || fakeUser;
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({
+      error: "Authentication required",
+    });
+  }
 
   const {
     projectId,
@@ -81,7 +108,7 @@ export const createTask = async (
       imageOriginalKey || null,
     imageResizedKey:
       imageResizedKey || null,
-    createdBy: user.name,
+    createdBy: getUserDisplayName(user),
     createdAt: now,
     updatedAt: now,
   };
@@ -119,17 +146,45 @@ export const getTasks = async (
 ) => {
 
   try {
+    const user = req.user;
 
-    const result =
-      await ddb.send(
-        new ScanCommand({
-          TableName: tables.TASKS,
-        })
-      );
+    if (!user) {
+      return res.status(401).json({
+        error: "Authentication required",
+      });
+    }
 
-    return res
-      .status(200)
-      .json(result.Items || []);
+    if (isManager(user)) {
+      const result =
+        await ddb.send(
+          new ScanCommand({
+            TableName: tables.TASKS,
+          })
+        );
+
+      return res
+        .status(200)
+        .json(result.Items || []);
+    }
+
+    if (isEmployee(user)) {
+      const result =
+        await ddb.send(
+          new ScanCommand({
+            TableName: tables.TASKS,
+            FilterExpression: "teamId = :teamId",
+            ExpressionAttributeValues: {
+              ":teamId": user.teamId,
+            },
+          })
+        );
+
+      return res
+        .status(200)
+        .json((result.Items || []).filter((task) => isAssignedToUser(user, task)));
+    }
+
+    return forbidOtherTeamTask(res);
 
   } catch (error) {
 
@@ -179,6 +234,12 @@ export const getTaskById =
           });
       }
 
+      logTaskTeamCheck(req, task);
+
+      if (!canAccessTask(req.user, task)) {
+        return forbidOtherTeamTask(res);
+      }
+
       return res
         .status(200)
         .json(task);
@@ -218,6 +279,12 @@ export const updateTask =
           });
       }
 
+      logTaskTeamCheck(req, task);
+
+      if (!canAccessTask(req.user, task)) {
+        return forbidOtherTeamTask(res);
+      }
+
       const updatableFields = [
         "title",
         "description",
@@ -230,6 +297,14 @@ export const updateTask =
         "imageOriginalKey",
         "imageResizedKey",
       ];
+
+      if (
+        !isManager(req.user) &&
+        updates.teamId !== undefined &&
+        updates.teamId !== req.user.teamId
+      ) {
+        return forbidOtherTeamTask(res);
+      }
 
       const fields =
         Object.keys(
@@ -338,6 +413,23 @@ export const deleteTask =
     const { id } = req.params;
 
     try {
+      const task =
+        await getTask(id);
+
+      if (!task) {
+        return res
+          .status(404)
+          .json({
+            error:
+              "Task not found",
+          });
+      }
+
+      logTaskTeamCheck(req, task);
+
+      if (!canAccessTask(req.user, task)) {
+        return forbidOtherTeamTask(res);
+      }
 
       await ddb.send(
         new DeleteCommand({
@@ -371,8 +463,14 @@ export const deleteTask =
 export const updateTaskStatus =
   async (req, res) => {
 
-    const user =
-      req.user || fakeUser;
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({
+        error:
+          "Authentication required",
+      });
+    }
 
     const { id } = req.params;
 
@@ -402,6 +500,12 @@ export const updateTaskStatus =
             error:
               "Task not found",
           });
+      }
+
+      logTaskTeamCheck(req, task);
+
+      if (!canAccessTask(user, task)) {
+        return forbidOtherTeamTask(res);
       }
 
       const oldStatus =
@@ -446,7 +550,7 @@ export const updateTaskStatus =
         logId: uuidv4(),
         taskId: id,
         teamId: task.teamId,
-        changedBy: user.name,
+        changedBy: getUserDisplayName(user),
         oldStatus,
         newStatus: status,
         changedAt: updatedAt,

@@ -3,6 +3,29 @@ import { PutCommand, QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { ddb, tables } from "../config/dynamo.js";
 
 const isManager = (user) => user?.role === "Manager";
+const isEmployee = (user) => user?.role === "Employee";
+const FORBIDDEN_TEAM_MESSAGE =
+  "Forbidden: You cannot access tasks from another team";
+
+const isAssignedToUser = (user, task) =>
+  task?.assigneeId === user?.userId || task?.assigneeId === user?.email;
+
+const canAccessTask = (user, task) =>
+  isManager(user) ||
+  (isEmployee(user) &&
+    task?.teamId === user?.teamId &&
+    isAssignedToUser(user, task));
+
+const logTaskTeamCheck = (req, task) => {
+  console.log("Authenticated user:", req.user);
+  console.log("Task team:", task.teamId, "User team:", req.user?.teamId);
+};
+
+const forbidOtherTeamTask = (res) =>
+  res.status(403).json({ error: FORBIDDEN_TEAM_MESSAGE });
+
+const getUserDisplayName = (user) =>
+  user?.email || user?.userId || "unknown";
 
 const getTask = async (taskId) => {
   const result = await ddb.send(new GetCommand({ TableName: tables.TASKS, Key: { taskId } }));
@@ -28,15 +51,17 @@ export const addComment = async (req, res) => {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    if (!isManager(user) && task.teamId !== user.teamId) {
-      return res.status(403).json({ error: "Forbidden" });
+    logTaskTeamCheck(req, task);
+
+    if (!canAccessTask(user, task)) {
+      return forbidOtherTeamTask(res);
     }
 
     const comment = {
       commentId: uuidv4(),
       taskId,
       userId: user.userId,
-      userName: user.name,
+      userName: getUserDisplayName(user),
       text,
       createdAt: new Date().toISOString(),
     };
@@ -63,8 +88,10 @@ export const getCommentsByTask = async (req, res) => {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    if (!isManager(user) && task.teamId !== user.teamId) {
-      return res.status(403).json({ error: "Forbidden" });
+    logTaskTeamCheck(req, task);
+
+    if (!canAccessTask(user, task)) {
+      return forbidOtherTeamTask(res);
     }
 
     const result = await ddb.send(
