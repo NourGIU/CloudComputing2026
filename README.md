@@ -1,4 +1,4 @@
-# Mini Jira on AWS
+# Mini Jira on AWS — High Availability & Event-Driven Architecture
 
 A lightweight Jira/Trello-style task management system fully hosted on AWS.
 
@@ -29,6 +29,23 @@ Managers can:
 - View all tasks
 - Assign tasks to any team
 - Monitor progress
+
+---
+
+# Features
+
+- Team-based task management
+- Manager and employee roles
+- Task assignment workflow
+- Kanban-style task lifecycle
+- Task comments
+- Image/file uploads
+- Event-driven notifications
+- Daily digest reminders
+- AWS serverless processing
+- Monitoring and logging
+- Team isolation and access control
+- High availability architecture
 
 ---
 
@@ -72,11 +89,21 @@ To Do → In Progress → In Review → Done
 
 # High Availability Architecture
 
-The system is designed using:
-- Multiple Availability Zones
-- Auto Scaling Group
-- Application Load Balancer
+![Mini Jira AWS Architecture](docs/screenshots/architecture/mini-jira-architecture.png)
+
+The system architecture includes:
 - CloudFront CDN
+- Application Load Balancer
+- Target Group health checks
+- EC2 backend instances
+- Auto Scaling Group
+- DynamoDB scalable storage
+- S3 image storage
+- Lambda serverless processing
+- Event-driven processing using SNS, SQS, and EventBridge
+- CloudWatch monitoring and alarms
+
+The backend infrastructure deployment setup and AWS integration scripts are included as part of the infrastructure implementation.
 
 ---
 
@@ -87,25 +114,48 @@ The system is designed using:
 3. Lambda resizes image
 4. Resized image stored in another S3 bucket
 
+Current deployed S3 buckets:
+- mini-jira-original-images1
+- mini-jira-resized-images1
+
 ---
 
 # Event-Driven Workflow
 
 1. Manager assigns task
 2. SNS publishes notification
-3. SQS receives event
-4. Worker Lambda processes event
-5. CloudWatch metrics updated
+3. SQS receives assignment event
+4. Assignment Worker Lambda processes the event
+5. Activity logs are written
+6. CloudWatch custom metrics are updated
+7. Daily digest reminders are triggered using EventBridge and Lambda
 
 ---
 
 # Monitoring
 
-CloudWatch dashboard monitors:
-- Tasks created
-- Tasks closed
-- EC2 CPU utilization
-- Average task completion time
+CloudWatch monitoring setup includes:
+- Dashboard widgets
+- CloudWatch alarms
+- Custom task activity metrics
+- Assignment worker monitoring
+- Task activity tracking
+- Lambda execution monitoring
+- SQS monitoring and alerts
+
+Monitoring screenshots are available in the repository screenshots folder.
+
+---
+
+# Authentication
+
+Amazon Cognito is used for:
+- User authentication
+- Login and signup management
+- Secure access control
+
+Configured Cognito resource:
+- mini-jira-app-client
 
 ---
 
@@ -113,17 +163,11 @@ CloudWatch dashboard monitors:
 
 Employees can only access tasks belonging to their own team.
 
-Managers can access all tasks.
+Filtering is enforced on the backend using:
+- teamId filtering
+- DynamoDB Global Secondary Indexes (GSI)
 
----
-
-# Demo Scenario
-
-- Ali creates Frontend task for Sara
-- Ali creates Backend task for Omar
-- Sara sees only Frontend tasks
-- Omar sees only Backend tasks
-- Ali sees all tasks
+Managers can access all tasks and teams.
 
 ---
 
@@ -133,26 +177,35 @@ Additional documentation is available in the `docs/` folder:
 - aws-resources.md
 - architecture.md
 - cost-safety.md
-- demo-script.md
 
 ---
 
 # AWS Region
 
 Current project region:
-- Europe (Stockholm)
+- Europe (Stockholm) — eu-north-1
 
 ---
 
-# Team Responsibilities
+# Current Project Progress
 
-## Member 1
-- Documentation
-- Cost monitoring
-- IAM coordination
-- Resource tracking
-- Architecture coordination
-- Final submission preparation
+Completed components currently include:
+- DynamoDB tables
+- Core APIs
+- Frontend integration
+- S3 image upload buckets
+- Lambda image resize workflow
+- Assignment worker Lambda
+- Daily digest Lambda
+- SNS notification setup
+- SQS queue integration
+- EventBridge scheduled rule
+- CloudWatch dashboard and alarms
+- Cognito authentication setup
+- Application Load Balancer
+- Auto Scaling setup
+- Infrastructure deployment setup
+- Project documentation and cost monitoring
 
 ---
 
@@ -163,4 +216,5 @@ To avoid unexpected AWS charges:
 - Avoid unnecessary NAT Gateways
 - Monitor CloudWatch logs
 - Track S3 storage
+- Release unused Elastic IPs
 - Use free-tier-safe resources whenever possible
