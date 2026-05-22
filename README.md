@@ -1,4 +1,4 @@
-# Mini Jira on AWS
+# Mini Jira on AWS — High Availability & Event-Driven Architecture
 
 A lightweight Jira/Trello-style task management system fully hosted on AWS.
 
@@ -29,6 +29,23 @@ Managers can:
 - View all tasks
 - Assign tasks to any team
 - Monitor progress
+
+---
+
+# Features
+
+- Team-based task management
+- Manager and employee roles
+- Task assignment workflow
+- Kanban-style task lifecycle
+- Task comments
+- Image/file uploads
+- Event-driven notifications
+- Daily digest reminders
+- AWS serverless processing
+- Monitoring and logging
+- Team isolation and access control
+- High availability architecture
 
 ---
 
@@ -75,12 +92,16 @@ To Do → In Progress → In Review → Done
 ![Mini Jira AWS Architecture](docs/screenshots/architecture/mini-jira-architecture.png)
 
 The system architecture includes:
-- Application Load Balancer
 - CloudFront CDN
-- Lambda serverless processing
+- Application Load Balancer
+- Target Group health checks
+- EC2 backend instances
+- Auto Scaling Group
 - DynamoDB scalable storage
 - S3 image storage
+- Lambda serverless processing
 - Event-driven processing using SNS, SQS, and EventBridge
+- CloudWatch monitoring and alarms
 
 The backend infrastructure deployment setup and AWS integration scripts are included as part of the infrastructure implementation.
 
@@ -119,6 +140,8 @@ CloudWatch monitoring setup includes:
 - Custom task activity metrics
 - Assignment worker monitoring
 - Task activity tracking
+- Lambda execution monitoring
+- SQS monitoring and alerts
 
 Monitoring screenshots are available in the repository screenshots folder.
 
@@ -140,17 +163,11 @@ Configured Cognito resource:
 
 Employees can only access tasks belonging to their own team.
 
-Managers can access all tasks.
+Filtering is enforced on the backend using:
+- teamId filtering
+- DynamoDB Global Secondary Indexes (GSI)
 
----
-
-# Demo Scenario
-
-- Ali creates Frontend task for Sara
-- Ali creates Backend task for Omar
-- Sara sees only Frontend tasks
-- Omar sees only Backend tasks
-- Ali sees all tasks
+Managers can access all tasks and teams.
 
 ---
 
@@ -160,8 +177,6 @@ Additional documentation is available in the `docs/` folder:
 - aws-resources.md
 - architecture.md
 - cost-safety.md
-- demo-script.md
-- submission-checklist.md
 
 ---
 
@@ -188,6 +203,7 @@ Completed components currently include:
 - CloudWatch dashboard and alarms
 - Cognito authentication setup
 - Application Load Balancer
+- Auto Scaling setup
 - Infrastructure deployment setup
 - Project documentation and cost monitoring
 
@@ -200,4 +216,5 @@ To avoid unexpected AWS charges:
 - Avoid unnecessary NAT Gateways
 - Monitor CloudWatch logs
 - Track S3 storage
+- Release unused Elastic IPs
 - Use free-tier-safe resources whenever possible
