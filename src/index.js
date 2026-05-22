@@ -13,7 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use(mockAuth);
+//app.use(mockAuth);
 
 app.get("/", (req, res) => {
   res.json({ message: "Mini-Jira API is running" });
