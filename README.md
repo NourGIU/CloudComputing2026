@@ -222,3 +222,7 @@ To avoid unexpected AWS charges:
 
 demo vedio:
 https://drive.google.com/drive/folders/1mZabFLIxCWYuCrStggLp52E3A01gI5Ft
+
+deployement link:
+http://mini-jira-alb-46965766.eu-north-1.elb.amazonaws.com
+https://d2agh87v0ldb6c.cloudfront.net
