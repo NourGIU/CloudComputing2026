@@ -218,3 +218,7 @@ To avoid unexpected AWS charges:
 - Track S3 storage
 - Release unused Elastic IPs
 - Use free-tier-safe resources whenever possible
+
+
+demo vedio:
+https://drive.google.com/drive/folders/1mZabFLIxCWYuCrStggLp52E3A01gI5Ft
